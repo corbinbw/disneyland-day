@@ -2,38 +2,71 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#1a4a9c"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="DL Day"/>
+<meta name="format-detection" content="telephone=no"/>
 <title>Our Disneyland Day · Oct 9, 2026</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png"/>
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png"/>
 <link rel="stylesheet" href="assets/leaflet.css"/>
 <link rel="stylesheet" href="assets/app.css"/>
 </head>
 <body>
-<div class="app">
-  <div style="position:relative">
-    <div id="map"></div>
-    <div class="map-float" id="clock">Park time … PT</div>
-  </div>
-  <aside class="panel">
-    <div class="panel-head">
-      <h1>Our Disneyland Day</h1>
-      <div class="date">Friday, Oct 9, 2026</div>
-      <div class="chips">
-        <span class="chip dl">DL 8 AM to 12 AM</span>
-        <span class="chip dca">DCA 8 AM to 10 PM</span>
-        <span class="chip show">Screams fireworks 9:30 PM</span>
+<div class="app" id="app" data-tab="now">
+  <header class="top" id="top">
+    <div class="top-row">
+      <div>
+        <h1>Our Disneyland Day</h1>
+        <div class="date" id="dateLabel">Friday, Oct 9, 2026</div>
       </div>
-      <div class="group">6 adults, 3 teens, 1 infant · 9 paid tickets · Indiana Jones closed</div>
+      <div class="clock" id="clock">--:-- PT</div>
     </div>
-    <div class="tabs">
-      <button class="tab active" data-tab="timeline-wrap">Timeline</button>
-      <button class="tab" data-tab="shows">Shows</button>
-    </div>
-    <div id="timeline-wrap" class="tab-body">
-      <div id="timeline"></div>
-      <div class="footer-note">Check times in the Disneyland app the morning of. Plan times are Pacific.</div>
-    </div>
-    <div id="shows" class="tab-body hidden"></div>
-  </aside>
+  </header>
+
+  <main class="views">
+    <!-- NOW -->
+    <section class="view scroll" id="view-now" aria-label="Now"></section>
+
+    <!-- PLAN -->
+    <section class="view scroll" id="view-plan" aria-label="Plan" hidden>
+      <div class="plan-head" id="planHead"></div>
+      <ol class="plan-list" id="planList"></ol>
+      <div class="plan-foot">
+        <button class="btn-text" id="resetBtn" type="button">Reset all checkmarks</button>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section class="view view-map" id="view-map" aria-label="Map" hidden>
+      <div id="map"></div>
+      <div class="seg" id="parkSeg" role="tablist">
+        <button type="button" data-park="dl" class="on">Disneyland</button>
+        <button type="button" data-park="dca">California Adventure</button>
+      </div>
+      <button class="fab" id="fabNext" type="button" aria-label="Go to next stop">
+        <span class="fab-ico">📍</span><span>Next</span>
+      </button>
+      <div class="sheet" id="sheet" aria-hidden="true">
+        <div class="sheet-grip"></div>
+        <div class="sheet-body" id="sheetBody"></div>
+      </div>
+    </section>
+
+    <!-- SHOWS -->
+    <section class="view scroll" id="view-shows" aria-label="Shows" hidden></section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button type="button" data-tab="now" class="on"><span class="ti">⭐</span><span>Now</span></button>
+    <button type="button" data-tab="plan"><span class="ti">📋</span><span>Plan</span></button>
+    <button type="button" data-tab="map"><span class="ti">🗺️</span><span>Map</span></button>
+    <button type="button" data-tab="shows"><span class="ti">🎆</span><span>Shows</span></button>
+  </nav>
 </div>
 <script src="assets/leaflet.js"></script>
 <script src="assets/data.js"></script>
