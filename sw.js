@@ -1,5 +1,5 @@
 /* Service worker: offline cache for the park. Bump VERSION on every push. */
-var VERSION = 'dlday-v5-2026-10-08b';
+var VERSION = 'dlday-v6-2026-10-08c';
 var PRECACHE = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ var PRECACHE = [
 ];
 self.addEventListener('install', function(e){
   self.skipWaiting();
-  e.waitUntil(caches.open(VERSION).then(function(c){ return c.addAll(PRECACHE); }));
+  e.waitUntil(caches.open(VERSION).then(function(c){ return c.addAll(PRECACHE.map(function(u){ return new Request(u, {cache:'reload'}); })); }));
 });
 self.addEventListener('activate', function(e){
   e.waitUntil(
@@ -48,14 +48,24 @@ self.addEventListener('fetch', function(e){
     );
     return;
   }
-  // Assets: cache first, then network (and store)
+  // Big static files (map, fonts, icons, leaflet): cache first
+  var big = /\.(webp|jpg|png|ttf)$/.test(url.pathname) || /leaflet\./.test(url.pathname);
+  if (big){
+    e.respondWith(
+      caches.match(req, { ignoreSearch:true }).then(function(hit){
+        return hit || fetch(req).then(function(res){
+          if (res && res.ok){ var copy = res.clone(); caches.open(VERSION).then(function(c){ c.put(req, copy); }); }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+  // App code and plan data: network first so edits show up, cache fallback offline
   e.respondWith(
-    caches.match(req, { ignoreSearch:true }).then(function(hit){
-      if (hit) return hit;
-      return fetch(req).then(function(res){
-        if (res && res.ok){ var copy = res.clone(); caches.open(VERSION).then(function(c){ c.put(req, copy); }); }
-        return res;
-      });
-    })
+    fetch(new Request(req.url, {cache:'no-cache'})).then(function(res){
+      if (res && res.ok){ var copy = res.clone(); caches.open(VERSION).then(function(c){ c.put(req, copy); }); }
+      return res;
+    }).catch(function(){ return caches.match(req, { ignoreSearch:true }); })
   );
 });
