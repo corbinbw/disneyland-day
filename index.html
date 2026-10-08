@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Our Disneyland Day · Oct 9, 2026</title>
+<link rel="stylesheet" href="assets/leaflet.css"/>
+<link rel="stylesheet" href="assets/app.css"/>
+</head>
+<body>
+<div class="app">
+  <div style="position:relative">
+    <div id="map"></div>
+    <div class="map-float" id="clock">Park time … PT</div>
+  </div>
+  <aside class="panel">
+    <div class="panel-head">
+      <h1>Our Disneyland Day</h1>
+      <div class="date">Friday, Oct 9, 2026</div>
+      <div class="chips">
+        <span class="chip dl">DL 8 AM to 12 AM</span>
+        <span class="chip dca">DCA 8 AM to 10 PM</span>
+        <span class="chip show">Screams fireworks 9:30 PM</span>
+      </div>
+      <div class="group">6 adults, 3 teens, 1 infant · 9 paid tickets · Indiana Jones closed</div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="timeline-wrap">Timeline</button>
+      <button class="tab" data-tab="shows">Shows</button>
+    </div>
+    <div id="timeline-wrap" class="tab-body">
+      <div id="timeline"></div>
+      <div class="footer-note">Check times in the Disneyland app the morning of. Plan times are Pacific.</div>
+    </div>
+    <div id="shows" class="tab-body hidden"></div>
+  </aside>
+</div>
+<script src="assets/leaflet.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
