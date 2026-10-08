@@ -2,21 +2,25 @@
   'use strict';
   var P = window.PLAN;
   var TZ = 'America/Los_Angeles';
-  var LS_KEY = 'dlr-plan-done-v3';           // v3: 20 stops in timeline order
-  // Older saves are migrated once so nothing is lost when stops were renumbered
-  var MIGRATE = [
+  var LS_KEY = 'dlr-plan-done-v4';           // v4: 21 stops, Toy Story Midway Mania added as 13
+  // Older saves are migrated step by step so checkmarks survive renumbering
+  var STEPS = [
+    { key:'dlr-plan-done-v1', map:{1:[1],2:[2],3:[3,4],4:[5],5:[6],6:[7],7:[8],8:[9],9:[10],10:[11],11:[12],12:[13,14],13:[15],14:[16]} },
     { key:'dlr-plan-done-v2', map:{1:[1],2:[2],3:[3],4:[4],5:[5],6:[6],7:[7],8:[8],9:[9],10:[10],11:[11],12:[12],13:[13],14:[14],15:[19],16:[20]} },
-    { key:'dlr-plan-done-v1', map:{1:[1],2:[2],3:[3,4],4:[5],5:[6],6:[7],7:[8],8:[9],9:[10],10:[11],11:[12],12:[13,14],13:[19],14:[20]} }
+    { key:'dlr-plan-done-v3', map:{1:[1],2:[2],3:[3],4:[4],5:[5],6:[6],7:[7],8:[8],9:[9],10:[10],11:[11],12:[12],13:[14],14:[15],15:[16],16:[17],17:[18],18:[19],19:[20],20:[21]} }
   ];
   (function migrate(){
     try {
       if (localStorage.getItem(LS_KEY) != null) return;
-      for (var i=0;i<MIGRATE.length;i++){
-        var old = JSON.parse(localStorage.getItem(MIGRATE[i].key) || 'null');
-        if (!old) continue;
-        var nu = {}, m = MIGRATE[i].map;
-        Object.keys(old).forEach(function(k){ if (old[k]) (m[k] || []).forEach(function(n){ nu[n] = true; }); });
-        localStorage.setItem(LS_KEY, JSON.stringify(nu));
+      for (var i=STEPS.length-1; i>=0; i--){
+        var cur = JSON.parse(localStorage.getItem(STEPS[i].key) || 'null');
+        if (!cur) continue;
+        for (var j=i; j<STEPS.length; j++){
+          var nu = {}, m = STEPS[j].map;
+          Object.keys(cur).forEach(function(k){ if (cur[k]) (m[k] || []).forEach(function(n){ nu[n] = true; }); });
+          cur = nu;
+        }
+        localStorage.setItem(LS_KEY, JSON.stringify(cur));
         return;
       }
     } catch(e){}

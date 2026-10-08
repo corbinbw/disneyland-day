@@ -1,5 +1,5 @@
 /* Service worker: offline cache for the park. Bump VERSION on every push. */
-var VERSION = 'dlday-v6-2026-10-08c';
+var VERSION = 'dlday-v7-2026-10-08d';
 var PRECACHE = [
   './',
   './index.html',

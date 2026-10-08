@@ -55,7 +55,8 @@ window.PLAN = {
     title: 'Gentle options for Brandon',
     intro: 'Brandon is happy to sit out the intense rides and hold Crew. Here are rides he can enjoy.',
     picks: [
-      { name: "Mickey & Minnie's Runaway Railway", note: 'Toontown. Already on the plan at about 6:00 PM. Whole family rides together.' },
+      { name: "Mickey & Minnie's Runaway Railway", note: 'Toontown. Already on the plan at about 6:15 PM. Whole family rides together.' },
+      { name: 'Toy Story Midway Mania!', note: 'Pixar Pier, on the plan at about 4:25 PM. Gentle shooting game ride. Brandon and Crew ride with everyone.' },
       { name: 'Haunted Mansion Holiday', note: 'Halloween Time overlay right now. Slow, smooth Doom Buggies.' },
       { name: 'Pirates of the Caribbean', note: 'Slow boat ride with a couple of small drops.' },
       { name: 'Rise of the Resistance', note: 'With the group. No spinning, but a short drop and some motion-sim moments.' },
@@ -87,13 +88,14 @@ window.PLAN = {
     { id:10, time:'2:25 PM',  minutes:14*60+25, title:'Radiator Springs Racers', park:'dca', height:'40"', ll:'Single Pass', tip:'Buy Single Pass on DCA entry if available.', x:1508, y:4120, rs:'other', bnote:'Brandon can likely ride with the group. Fast, but no spinning.', icon:'🚗' },
     { id:11, time:'3:20 PM',  minutes:15*60+20, title:'Guardians BREAKOUT!', park:'dca', height:'40"', ll:'Multi Pass', tip:'May be Monsters After Dark after 3 PM.', x:781, y:4611, rs:'brandon', motion:true, icon:'💥' },
     { id:12, time:'4:00 PM',  minutes:16*60,    title:'Incredicoaster', park:'dca', height:'48"', ll:'Multi Pass', tip:'Teens and adults who clear 48 inches.', x:2550, y:3920, rs:'brandon', motion:true, icon:'🎢' },
-    { id:13, time:'4:40 PM',  minutes:16*60+40, title:"Soarin' Across America", park:'dca', height:'40"', ll:'Multi Pass', tip:'Dry, chill break. Book Runaway Railway Multi Pass for about 6:00 PM.', x:2380, y:5280, rs:'brandon', motion:true, bnote:'Optional for Brandon. Gentle for most people, but the big screen can bother motion-sensitive riders.', icon:'✈️' },
-    { id:14, time:'5:10 PM',  minutes:17*60+10, title:'Grizzly River Run', park:'dca', height:'42"', ll:'Multi Pass', tip:'Skip if tired or short on dry clothes. You will get wet.', x:2676, y:4927, rs:'call', bnote:'The rafts spin as they go.', icon:'🐻' },
-    { id:15, time:'5:45 PM',  minutes:17*60+45, title:'Hop back to Disneyland', park:'meal', height:'any', ll:'n/a', tip:'Esplanade back to DL. Head up Main Street toward Toontown.', x:2250, y:2903, icon:'🚶' },
-    { id:16, time:'6:00 PM',  minutes:18*60,    title:"Mickey & Minnie's Runaway Railway", park:'dl', height:'any', ll:'Multi Pass', tip:'Mickey\'s Toontown, back of Disneyland. No height limit, so all 10 ride together, infant too.', x:2375, y:282, bnote:'Great pick for Brandon too. Gentle trackless ride, the whole family rides together.', icon:'🚂' },
-    { id:17, time:'6:45 PM',  minutes:18*60+45, title:'Dinner near the hub', park:'meal', height:'any', ll:'n/a', tip:'Plaza Inn (roomy) or mobile order. Change the infant and charge phones.', x:2456, y:1438, icon:'🍽️' },
-    { id:18, time:'8:40 PM',  minutes:20*60+40, title:'Claim fireworks spot', park:'show', height:'any', ll:'n/a', tip:'Main Street curb facing the castle, or the hub. Sit with the infant. Bring layers.', x:2130, y:1830, icon:'📍' },
-    { id:19, time:'optional', minutes:21*60,    title:'World of Color (optional)', park:'show', height:'any', ll:'n/a', tip:'Only if you split the party. 9:00 and 10:15 PM at DCA.', x:2929, y:4436, icon:'🌊', optional:true },
-    { id:20, time:'9:30 PM',  minutes:21*60+30, title:'Halloween Screams + fireworks', park:'show', height:'any', ll:'n/a', tip:'Main Street or castle plaza. Sit on the curb with infant.', x:2146, y:1327, icon:'🎆' }
+    { id:13, time:'4:25 PM', minutes:16*60+25, title:'Toy Story Midway Mania!', park:'dca', height:'any', ll:'Multi Pass', tip:'Pixar Pier, right next to Incredicoaster. Gentle shooting dark ride, everyone plays.', x:2945, y:4048, bnote:'Brandon and Crew ride with everyone. No height limit.', icon:'🎯' },
+    { id:14, time:'4:55 PM', minutes:16*60+55, title:"Soarin' Across America", park:'dca', height:'40"', ll:'Multi Pass', tip:'Dry, chill break. Book Runaway Railway Multi Pass for about 6:15 PM.', x:2380, y:5280, rs:'brandon', motion:true, bnote:'Optional for Brandon. Gentle for most people, but the big screen can bother motion-sensitive riders.', icon:'✈️' },
+    { id:15, time:'5:25 PM', minutes:17*60+25, title:'Grizzly River Run', park:'dca', height:'42"', ll:'Multi Pass', tip:'Optional if behind. Skip if tired or short on dry clothes. You will get wet.', x:2676, y:4927, rs:'call', bnote:'The rafts spin as they go.', icon:'🐻' },
+    { id:16, time:'6:00 PM', minutes:18*60, title:'Hop back to Disneyland', park:'meal', height:'any', ll:'n/a', tip:'Esplanade back to DL. Head up Main Street toward Toontown.', x:2250, y:2903, icon:'🚶' },
+    { id:17, time:'6:15 PM', minutes:18*60+15, title:"Mickey & Minnie's Runaway Railway", park:'dl', height:'any', ll:'Multi Pass', tip:'Mickey\'s Toontown, back of Disneyland. No height limit, so all 10 ride together, infant too.', x:2375, y:282, bnote:'Great pick for Brandon too. Gentle trackless ride, the whole family rides together.', icon:'🚂' },
+    { id:18, time:'7:00 PM', minutes:19*60, title:'Dinner near the hub', park:'meal', height:'any', ll:'n/a', tip:'Plaza Inn (roomy) or mobile order. Change the infant and charge phones.', x:2456, y:1438, icon:'🍽️' },
+    { id:19, time:'8:40 PM',  minutes:20*60+40, title:'Claim fireworks spot', park:'show', height:'any', ll:'n/a', tip:'Main Street curb facing the castle, or the hub. Sit with the infant. Bring layers.', x:2130, y:1830, icon:'📍' },
+    { id:20, time:'optional', minutes:21*60,    title:'World of Color (optional)', park:'show', height:'any', ll:'n/a', tip:'Only if you split the party. 9:00 and 10:15 PM at DCA.', x:2929, y:4436, icon:'🌊', optional:true },
+    { id:21, time:'9:30 PM',  minutes:21*60+30, title:'Halloween Screams + fireworks', park:'show', height:'any', ll:'n/a', tip:'Main Street or castle plaza. Sit on the curb with infant.', x:2146, y:1327, icon:'🎆' }
   ]
 };
