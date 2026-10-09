@@ -41,6 +41,8 @@
     pin:    '<path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/>',
     ruler:  '<path d="M3.5 15.5 15.5 3.5l5 5-12 12z"/><path d="M7.5 11.5l2 2M10.5 8.5l2 2M13.5 5.5l2 2"/>',
     bolt:   '<path d="M13.5 2.5 5 13.6h6.2L10.5 21.5 19 10.4h-6.2z" fill="currentColor" stroke-width="1.2"/>',
+    clock:  '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    person: '<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6.4 6.5-6.4s6.5 2.8 6.5 6.4"/>',
     warn:   '<path d="M10.3 4.3 2.6 17.6a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/>',
     x:      '<path d="M6 6l12 12M18 6 6 18"/>',
     chev:   '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
@@ -104,7 +106,10 @@
     var h = '<div class="chips">';
     h += '<span class="chip park-' + esc(s.park) + '">' + esc(PARK_LABEL[s.park] || s.park) + '</span>';
     if (s.height && s.height !== 'any') h += '<span class="chip">' + ico('ruler') + '<b>' + esc(s.height) + '</b></span>';
-    if (s.ll && s.ll !== 'n/a') h += '<span class="chip ll">' + ico('bolt') + esc(s.ll) + '</span>';
+    if (s.ll && s.ll !== 'n/a'){
+      if (/multi pass|single pass|\bSP\b|\bLL\b/i.test(s.ll)) h += '<span class="chip ll">' + ico('bolt') + esc(s.ll) + '</span>';
+      else h += '<span class="chip">' + (/standby/i.test(s.ll) ? ico('clock') : (/single rider/i.test(s.ll) ? ico('person') : '')) + esc(s.ll) + '</span>';
+    }
     if (s.motion) h += '<span class="chip warn">' + ico('warn') + 'Motion warning</span>';
     h += '</div>';
     return h + brandonHtml(s);
