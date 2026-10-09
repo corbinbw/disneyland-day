@@ -418,7 +418,9 @@
     }
   });
   $('#fabNext').addEventListener('click', function(){
-    var n = computeNext().stop || MAIN[0];
+    var i = -1;
+    for (var k=0;k<P.stops.length;k++){ if (P.stops[k].id === selId) { i = k; break; } }
+    var n = i >= 0 ? P.stops[(i + 1) % P.stops.length] : (computeNext().stop || MAIN[0]);
     openSheet(n.id, true);
   });
   $('#resetBtn').addEventListener('click', function(){
