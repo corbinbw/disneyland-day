@@ -2,12 +2,13 @@
   'use strict';
   var P = window.PLAN;
   var TZ = 'America/Los_Angeles';
-  var LS_KEY = 'dlr-plan-done-v4';           // v4: 21 stops, Toy Story Midway Mania added as 13
+  var LS_KEY = 'dlr-plan-done-v5';           // v5: 26 stops, final schedule with late re-rides
   // Older saves are migrated step by step so checkmarks survive renumbering
   var STEPS = [
     { key:'dlr-plan-done-v1', map:{1:[1],2:[2],3:[3,4],4:[5],5:[6],6:[7],7:[8],8:[9],9:[10],10:[11],11:[12],12:[13,14],13:[15],14:[16]} },
     { key:'dlr-plan-done-v2', map:{1:[1],2:[2],3:[3],4:[4],5:[5],6:[6],7:[7],8:[8],9:[9],10:[10],11:[11],12:[12],13:[13],14:[14],15:[19],16:[20]} },
-    { key:'dlr-plan-done-v3', map:{1:[1],2:[2],3:[3],4:[4],5:[5],6:[6],7:[7],8:[8],9:[9],10:[10],11:[11],12:[12],13:[14],14:[15],15:[16],16:[17],17:[18],18:[19],19:[20],20:[21]} }
+    { key:'dlr-plan-done-v3', map:{1:[1],2:[2],3:[3],4:[4],5:[5],6:[6],7:[7],8:[8],9:[9],10:[10],11:[11],12:[12],13:[14],14:[15],15:[16],16:[17],17:[18],18:[19],19:[20],20:[21]} },
+    { key:'dlr-plan-done-v4', map:{1:[1],2:[2],3:[4],4:[3],5:[6],6:[19],7:[5],8:[9],9:[10],10:[11],11:[12],12:[14],13:[13],14:[15],15:[16],16:[17],17:[7],18:[18],19:[20],20:[26],21:[21]} }
   ];
   (function migrate(){
     try {
@@ -40,6 +41,8 @@
     pin:    '<path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/>',
     ruler:  '<path d="M3.5 15.5 15.5 3.5l5 5-12 12z"/><path d="M7.5 11.5l2 2M10.5 8.5l2 2M13.5 5.5l2 2"/>',
     bolt:   '<path d="M13.5 2.5 5 13.6h6.2L10.5 21.5 19 10.4h-6.2z" fill="currentColor" stroke-width="1.2"/>',
+    clock:  '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    person: '<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6.4 6.5-6.4s6.5 2.8 6.5 6.4"/>',
     warn:   '<path d="M10.3 4.3 2.6 17.6a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/>',
     x:      '<path d="M6 6l12 12M18 6 6 18"/>',
     chev:   '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
@@ -103,7 +106,10 @@
     var h = '<div class="chips">';
     h += '<span class="chip park-' + esc(s.park) + '">' + esc(PARK_LABEL[s.park] || s.park) + '</span>';
     if (s.height && s.height !== 'any') h += '<span class="chip">' + ico('ruler') + '<b>' + esc(s.height) + '</b></span>';
-    if (s.ll && s.ll !== 'n/a') h += '<span class="chip ll">' + ico('bolt') + esc(s.ll) + '</span>';
+    if (s.ll && s.ll !== 'n/a'){
+      if (/multi pass|single pass|\bSP\b|\bLL\b/i.test(s.ll)) h += '<span class="chip ll">' + ico('bolt') + esc(s.ll) + '</span>';
+      else h += '<span class="chip">' + (/standby/i.test(s.ll) ? ico('clock') : (/single rider/i.test(s.ll) ? ico('person') : '')) + esc(s.ll) + '</span>';
+    }
     if (s.motion) h += '<span class="chip warn">' + ico('warn') + 'Motion warning</span>';
     h += '</div>';
     return h + brandonHtml(s);
@@ -418,7 +424,9 @@
     }
   });
   $('#fabNext').addEventListener('click', function(){
-    var n = computeNext().stop || MAIN[0];
+    var i = -1;
+    for (var k=0;k<P.stops.length;k++){ if (P.stops[k].id === selId) { i = k; break; } }
+    var n = i >= 0 ? P.stops[(i + 1) % P.stops.length] : (computeNext().stop || MAIN[0]);
     openSheet(n.id, true);
   });
   $('#resetBtn').addEventListener('click', function(){
