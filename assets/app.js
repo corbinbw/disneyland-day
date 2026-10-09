@@ -67,7 +67,33 @@
   var done = loadDone();
   var popId = null; // stop that was just checked, gets a one-time pop animation
   function doneCount(){ return P.stops.filter(function(s){ return !!done[s.id]; }).length; }
-  function setDone(id, val){ if (val) done[id] = true; else delete done[id]; saveDone(); popId = val ? id : null; renderAll(); popId = null; }
+  function setDone(id, val){ if (val) done[id] = true; else delete done[id]; saveDone(); syncRide(id, val); popId = val ? id : null; renderAll(); popId = null; }
+
+  // Ride checklist has its own key so it never touches the plan's checkmarks.
+  // Values: true = checked by hand, 'plan' = checked because its plan stop was marked done.
+  var R = window.RIDES || { parks:[], fromPlan:{} };
+  var RIDES_KEY = 'dlr-rides-v1';
+  function saveRides(){ try { localStorage.setItem(RIDES_KEY, JSON.stringify(rides)); } catch(e){} }
+  var rides = (function(){ try { var v = JSON.parse(localStorage.getItem(RIDES_KEY)); return v && typeof v === 'object' ? v : null; } catch(e){ return null; } })();
+  if (!rides){
+    rides = {};
+    if (window.RIDES){ P.stops.forEach(function(s){ var rid = R.fromPlan[s.title]; if (rid && done[s.id]) rides[rid] = 'plan'; }); saveRides(); }
+  }
+  // Undoing a plan stop only clears a ride it checked itself, and only if no other done stop is the same ride
+  function syncRide(stopId, val){
+    var s = byId(stopId), rid = s && R.fromPlan[s.title];
+    if (!rid) return;
+    if (val){
+      if (rides[rid]) return;
+      rides[rid] = 'plan';
+    } else {
+      if (rides[rid] !== 'plan') return;
+      if (P.stops.some(function(o){ return done[o.id] && R.fromPlan[o.title] === rid; })) return;
+      delete rides[rid];
+    }
+    saveRides();
+    renderRides();
+  }
 
   /* ---------- Pacific time ---------- */
   var fmtParts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23' });
@@ -275,6 +301,66 @@
     $('#view-shows').innerHTML = h;
   }
 
+  /* ---------- RIDES ---------- */
+  var ridesPark = null, ridesPicked = false, popRide = null;
+  var TAG_LABEL = { thrill:'Thrill', family:'Family', kids:'Kids', show:'Show', walk:'Walkthrough' };
+  function ridesDefaultPark(){ var s = computeNext().stop; return s ? parkOf(s) : 'dl'; }
+  function rideCount(list){
+    var n = 0, t = 0;
+    list.forEach(function(r){ if (r.closed) return; t++; if (rides[r.id]) n++; });
+    return { n:n, t:t };
+  }
+  function rideRow(r){
+    if (r.closed){
+      return '<li><div class="rrow closed" aria-disabled="true">' +
+               '<span class="rtxt"><span class="rn">' + esc(r.name) + '</span><span class="rmeta"><span class="rtag t-closed">' + esc(r.closed) + '</span></span></span>' +
+               '<span class="rx">' + ico('ban') + '</span>' +
+             '</div></li>';
+    }
+    var on = !!rides[r.id];
+    return '<li><button type="button" class="rrow' + (on ? ' on' : '') + (popRide === r.id ? ' pop' : '') + '" data-act="ride" data-rid="' + esc(r.id) + '" aria-pressed="' + on + '">' +
+             '<span class="rtxt"><span class="rn">' + esc(r.name) + '</span>' +
+               '<span class="rmeta"><span class="rtag t-' + esc(r.tag) + '">' + esc(TAG_LABEL[r.tag] || r.tag) + '</span>' +
+                 (r.height ? '<span class="rh">' + ico('ruler') + esc(r.height) + '</span>' : '') + '</span>' +
+               (r.note ? '<span class="rnote">' + esc(r.note) + '</span>' : '') +
+             '</span>' +
+             '<span class="rck">' + ico('check') + '</span>' +
+           '</button></li>';
+  }
+  function renderRides(){
+    var head = $('#ridesHead'), list = $('#ridesList');
+    if (!R.parks.length){
+      head.innerHTML = '';
+      list.innerHTML = '<div class="note">' + ico('phone') + '<span>The ride list did not load. Reload the app when you have signal.</span></div>';
+      return;
+    }
+    if (!ridesPark) ridesPark = ridesDefaultPark();
+    var park = R.parks.filter(function(p){ return p.key === ridesPark; })[0] || R.parks[0];
+    var c = rideCount(park.lands.reduce(function(a, l){ return a.concat(l.rides); }, []));
+    head.innerHTML = '<div class="rcard starfield">' +
+        '<div class="rseg" role="tablist" aria-label="Park">' + R.parks.map(function(p){
+          var on = p.key === park.key;
+          return '<button type="button" role="tab" data-act="rpark" data-park="' + esc(p.key) + '" aria-selected="' + on + '"' + (on ? ' class="on"' : '') + '>' + esc(p.short) + '</button>';
+        }).join('') + '</div>' +
+        '<div class="progress"><div class="bar"><i style="width:' + (c.t ? Math.round(c.n / c.t * 100) : 0) + '%"></i></div><div class="lbl">' + c.n + ' of ' + c.t + ' ridden</div></div>' +
+      '</div>';
+    list.innerHTML = park.lands.map(function(l){
+      var lc = rideCount(l.rides);
+      return '<section class="land park-' + esc(park.key) + (lc.t && lc.n === lc.t ? ' all' : '') + '">' +
+               '<div class="land-head"><span class="land-ico" aria-hidden="true">' + esc(l.icon) + '</span><h3>' + esc(l.name) + '</h3><span class="land-count">' + lc.n + ' of ' + lc.t + '</span></div>' +
+               '<div class="land-perf" aria-hidden="true"></div>' +
+               '<ul class="rlist">' + l.rides.map(rideRow).join('') + '</ul>' +
+             '</section>';
+    }).join('');
+  }
+  function toggleRide(rid){
+    var a = document.activeElement, refocus = !!(a && a.getAttribute && a.getAttribute('data-rid') === rid);
+    if (rides[rid]) delete rides[rid]; else rides[rid] = true;
+    saveRides();
+    popRide = rides[rid] ? rid : null; renderRides(); popRide = null;
+    if (refocus){ var b = $('#ridesList [data-rid="' + rid + '"]'); if (b) b.focus({ preventScroll:true }); }
+  }
+
   /* ---------- MAP ---------- */
   var map = null, markers = {}, selId = null, pendingFocus = null;
   var PIN_PATH = 'M20 50.5C14 43 3 32.5 3 20a17 17 0 0 1 34 0c0 12.5-11 23-17 30.5z';
@@ -376,8 +462,13 @@
   function switchTab(tab){
     currentTab = tab;
     $('#app').dataset.tab = tab;
-    ['now','plan','map','shows'].forEach(function(t){ $('#view-' + t).hidden = (t !== tab); });
+    ['now','plan','map','shows','rides'].forEach(function(t){ $('#view-' + t).hidden = (t !== tab); });
     $$('#tabbar button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+    // Rides follows the park you're in until someone picks one
+    if (tab === 'rides' && !ridesPicked && R.parks.length){
+      var k = ridesDefaultPark();
+      if (k !== ridesPark){ ridesPark = k; renderRides(); }
+    }
     if (tab === 'map'){
       requestAnimationFrame(function(){
         if (!map) initMap();
@@ -421,6 +512,11 @@
       case 'close': closeSheet(); break;
       case 'gentle': switchTab('shows'); requestAnimationFrame(function(){ var g = $('#gentle'); if (g) g.scrollIntoView({ block:'start' }); }); break;
       case 'sheetdone': setDone(id, !done[id]); if (selId === id) $('#sheetBody').innerHTML = sheetHtml(byId(id)); break;
+      case 'ride': toggleRide(b.dataset.rid); break;
+      case 'rpark':
+        ridesPicked = true;
+        if (b.dataset.park !== ridesPark){ ridesPark = b.dataset.park; renderRides(); $('#view-rides').scrollTop = 0; }
+        break;
     }
   });
   $('#fabNext').addEventListener('click', function(){
@@ -431,6 +527,9 @@
   });
   $('#resetBtn').addEventListener('click', function(){
     if (window.confirm('Clear all checkmarks? This cannot be undone.')) { done = {}; saveDone(); openRowId = null; renderAll(); }
+  });
+  $('#ridesReset').addEventListener('click', function(){
+    if (window.confirm('Clear all ride checkmarks for both parks? This cannot be undone.')) { rides = {}; saveRides(); renderRides(); }
   });
 
   /* ---------- render + clock ---------- */
@@ -443,6 +542,7 @@
   }
   $('#dateLabel').textContent = P.dateLabel;
   renderShows();
+  renderRides();
   tick();
   setInterval(tick, 30000);
   document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') tick(); });
