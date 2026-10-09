@@ -1,5 +1,5 @@
 /* Service worker: offline cache for the park. Bump VERSION on every push. */
-var VERSION = 'dlday-v13-2026-10-09d';
+var VERSION = 'dlday-v14-2026-10-09e';
 var PRECACHE = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ var PRECACHE = [
   './assets/app.js',
   './assets/data.js',
   './assets/rides.js',
+  './assets/games-data.js',
+  './assets/games.js',
   './assets/leaflet.css',
   './assets/leaflet.js',
   './assets/resort_map.webp',
