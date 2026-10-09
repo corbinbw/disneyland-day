@@ -67,13 +67,33 @@
   var done = loadDone();
   var popId = null; // stop that was just checked, gets a one-time pop animation
   function doneCount(){ return P.stops.filter(function(s){ return !!done[s.id]; }).length; }
-  function setDone(id, val){ if (val) done[id] = true; else delete done[id]; saveDone(); popId = val ? id : null; renderAll(); popId = null; }
+  function setDone(id, val){ if (val) done[id] = true; else delete done[id]; saveDone(); syncRide(id, val); popId = val ? id : null; renderAll(); popId = null; }
 
-  // Ride checklist has its own key so it never touches the plan's checkmarks
+  // Ride checklist has its own key so it never touches the plan's checkmarks.
+  // Values: true = checked by hand, 'plan' = checked because its plan stop was marked done.
   var R = window.RIDES || { parks:[], fromPlan:{} };
   var RIDES_KEY = 'dlr-rides-v1';
   function saveRides(){ try { localStorage.setItem(RIDES_KEY, JSON.stringify(rides)); } catch(e){} }
-  var rides = (function(){ try { var v = JSON.parse(localStorage.getItem(RIDES_KEY)); return v && typeof v === 'object' ? v : null; } catch(e){ return null; } })() || {};
+  var rides = (function(){ try { var v = JSON.parse(localStorage.getItem(RIDES_KEY)); return v && typeof v === 'object' ? v : null; } catch(e){ return null; } })();
+  if (!rides){
+    rides = {};
+    if (window.RIDES){ P.stops.forEach(function(s){ var rid = R.fromPlan[s.title]; if (rid && done[s.id]) rides[rid] = 'plan'; }); saveRides(); }
+  }
+  // Undoing a plan stop only clears a ride it checked itself, and only if no other done stop is the same ride
+  function syncRide(stopId, val){
+    var s = byId(stopId), rid = s && R.fromPlan[s.title];
+    if (!rid) return;
+    if (val){
+      if (rides[rid]) return;
+      rides[rid] = 'plan';
+    } else {
+      if (rides[rid] !== 'plan') return;
+      if (P.stops.some(function(o){ return done[o.id] && R.fromPlan[o.title] === rid; })) return;
+      delete rides[rid];
+    }
+    saveRides();
+    renderRides();
+  }
 
   /* ---------- Pacific time ---------- */
   var fmtParts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23' });
