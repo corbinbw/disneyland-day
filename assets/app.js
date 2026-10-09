@@ -513,8 +513,9 @@
   function switchTab(tab){
     currentTab = tab;
     $('#app').dataset.tab = tab;
-    ['now','plan','map','shows','rides'].forEach(function(t){ $('#view-' + t).hidden = (t !== tab); });
+    ['now','plan','map','shows','rides','games'].forEach(function(t){ var v = $('#view-' + t); if (v) v.hidden = (t !== tab); });
     $$('#tabbar button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+    if (tab !== 'games' && window.DLGames) window.DLGames.leave();
     // Rides follows the park you're in until someone picks one
     if (tab === 'rides' && !ridesPicked && R.parks.length){
       var k = ridesDefaultPark();
