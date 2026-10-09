@@ -243,8 +243,8 @@
     { k:'movies', name:'Movies', words: HW.movies },
     { k:'rides', name:'In the parks', words: HW.rides }
   ];
-  var ROUND_MS = 60000;
-  var H = { cat:'mix', phase:'setup', score:0, list:[], cur:null, end:0, tick:null, cd:null, lastAct:0, early:false, decks:{} };
+  var ROUND_MS = 60000, LOCK_MS = 600;
+  var H = { cat:'mix', phase:'setup', score:0, list:[], cur:null, end:0, tick:null, cd:null, lastAct:0, early:false, decks:{}, endArm:0, endT:null };
   function cat(){ for (var i=0;i<CATS.length;i++) if (CATS[i].k === H.cat) return CATS[i]; return CATS[0]; }
   function nextWord(){ var c = cat(); return (H.decks[c.k] || (H.decks[c.k] = deck(c.words))).next(); }
   var lock = null;
@@ -258,7 +258,41 @@
   function stopTimers(){
     if (H.cd){ clearInterval(H.cd); H.cd = null; }
     if (H.tick){ clearInterval(H.tick); H.tick = null; }
-    drag = null;
+    if (H.endT){ clearTimeout(H.endT); H.endT = null; }
+  }
+
+  /* Tilt: screen face down = got it, face up = skip, measured from where the phone sat when the round began */
+  var TILT_GO = 40, TILT_BACK = 20;
+  var tilt = { ok:null, asking:false, on:false, live:false, p:null, base:0, armed:false };
+  function onTilt(e){
+    if (e.beta == null || e.gamma == null) return;
+    var r = Math.PI / 180, up = Math.cos(e.beta * r) * Math.cos(e.gamma * r);
+    // Angle of the screen above (+) or below (-) the horizon; the same whether the phone is upright or sideways
+    tilt.p = Math.asin(Math.max(-1, Math.min(1, up))) / r;
+    if (H.phase !== 'play' || !tilt.live) return;
+    var d = tilt.p - tilt.base;
+    if (!tilt.armed){ tilt.armed = Math.abs(d) < TILT_BACK; return; }
+    if (Math.abs(d) >= TILT_GO){ tilt.armed = false; headsAct(d < 0); }
+  }
+  // iOS only hands out motion data after requestPermission() runs inside a tap, so this is called from Start
+  function tiltStart(then){
+    var DOE = window.DeviceOrientationEvent;
+    if (tilt.asking) return;
+    if (!DOE || tilt.ok === false){ then(); return; }
+    if (tilt.ok || typeof DOE.requestPermission !== 'function'){ tiltListen(); then(); return; }
+    tilt.asking = true;
+    var done = function(granted){ tilt.asking = false; tilt.ok = granted; if (granted) tiltListen(); then(); };
+    try { DOE.requestPermission().then(function(s){ done(s === 'granted'); }, function(){ done(false); }); }
+    catch(err){ done(false); }
+  }
+  function tiltListen(){ if (!tilt.on){ tilt.on = true; tilt.p = null; window.addEventListener('deviceorientation', onTilt); } }
+  function tiltStop(){ if (tilt.on){ tilt.on = false; window.removeEventListener('deviceorientation', onTilt); } tilt.live = false; tilt.p = null; }
+  function tiltCalibrate(){
+    tilt.live = tilt.on && tilt.p != null;
+    if (!tilt.live) return;
+    // A phone still lying flat isn't on anyone's forehead yet: assume upright and wait for it to get there
+    tilt.base = Math.abs(tilt.p) <= 45 ? tilt.p : 0;
+    tilt.armed = Math.abs(tilt.p - tilt.base) < TILT_BACK;
   }
   function renderHeadsSetup(){
     stopTimers();
@@ -267,7 +301,7 @@
       '<ol class="hu-how">' +
         '<li><span class="n">1</span><span>Hold the phone on your forehead, screen facing out.</span></li>' +
         '<li><span class="n">2</span><span>Everyone else gives clues: act it out, hum it, describe it. Just don\'t say the word!</span></li>' +
-        '<li><span class="n">3</span><span>Tap <b>Got it</b> or <b>Skip</b>, or swipe the card right or left. 60 seconds a round.</span></li>' +
+        '<li><span class="n">3</span><span><b>Got it:</b> tap the right half of the screen or tilt the phone down. <b>Skip:</b> tap the left half or tilt it up. 60 seconds a round.</span></li>' +
       '</ol>' +
       '<h3 class="g-sub">Pick a deck</h3>' +
       '<div class="hu-cats" role="radiogroup" aria-label="Deck">' + CATS.map(function(c){
@@ -299,24 +333,27 @@
     }, 1000);
   }
   function quitCountdown(){
-    stopTimers(); setLive(false); keepAwake(false);
+    stopTimers(); setLive(false); keepAwake(false); tiltStop();
     renderHeadsSetup();
   }
   function beginRound(){
-    H.phase = 'play'; H.end = Date.now() + ROUND_MS; H.cur = nextWord(); H.lastAct = 0;
-    show('<div class="hu-play">' +
-           '<div class="hu-top">' +
-             '<button type="button" class="hu-end" data-g="hend">' + ico('x') + '<span>End</span></button>' +
-             '<span class="hu-time" role="timer" aria-label="Seconds left">60</span>' +
-             '<span class="hu-pts"><b>0</b> got</span>' +
+    H.phase = 'play'; H.end = Date.now() + ROUND_MS; H.cur = nextWord(); H.lastAct = 0; H.endArm = 0;
+    tiltCalibrate();
+    show('<div class="hu-play starfield">' +
+           '<div class="hu-half skip"><span class="hu-hint">' + ico('x') + 'Skip</span></div>' +
+           '<div class="hu-half got"><span class="hu-hint">' + ico('check') + 'Got it</span></div>' +
+           '<div class="hu-hud">' +
+             '<div class="hu-top">' +
+               '<button type="button" class="hu-end" data-g="hend">' + ico('x') + '<span>End</span></button>' +
+               '<span class="hu-time" role="timer" aria-label="Seconds left">60</span>' +
+               '<span class="hu-pts"><b>0</b> got</span>' +
+             '</div>' +
+             '<div class="hu-tbar"><i></i></div>' +
            '</div>' +
-           '<div class="hu-tbar"><i></i></div>' +
-           '<div class="hu-card starfield"><span class="hu-lbl">' + esc(H.cur.c) + '</span><div class="hu-word">' + esc(H.cur.w) + '</div></div>' +
-           '<div class="hu-zones">' +
-             '<button type="button" class="hu-skip" data-g="hskip">' + ico('x') + '<span>Skip</span></button>' +
-             '<button type="button" class="hu-got" data-g="hgot">' + ico('check') + '<span>Got it!</span></button>' +
-           '</div>' +
-         '</div>', 'full');
+           '<div class="hu-card"><span class="hu-lbl">' + esc(H.cur.c) + '</span><div class="hu-word">' + esc(H.cur.w) + '</div></div>' +
+           (tilt.live ? '<span class="hu-tilt"><i></i>Tilt on</span>' : '') +
+           '<div class="hu-flash" aria-hidden="true"></div>' +
+         '</div>', 'full edge');
     fitWord();
     H.tick = setInterval(tick, 200);
     tick();
@@ -326,7 +363,7 @@
   function fitWord(){
     var w = $('.hu-word'), card = $('.hu-card');
     if (!w || !card) return;
-    var size = Math.min(68, Math.round(card.clientWidth / 4.6)), maxH = card.clientHeight - 90;
+    var size = Math.min(80, Math.round(card.clientWidth / 4.6)), maxH = card.clientHeight - 76;
     w.style.fontSize = size + 'px';
     while (size > 24 && (w.scrollWidth > w.clientWidth + 1 || w.offsetHeight > maxH)){ size -= 2; w.style.fontSize = size + 'px'; }
   }
@@ -342,13 +379,18 @@
   function headsAct(ok){
     if (H.phase !== 'play') return;
     var now = performance.now();
-    if (now - H.lastAct < 350) return;
+    if (now - H.lastAct < LOCK_MS) return;
     H.lastAct = now;
     H.list.push({ w:H.cur.w, ok:ok });
     if (ok) H.score++;
-    buzz(ok ? 40 : [20, 40, 20]);
-    var card = $('.hu-card');
-    if (card){ card.classList.remove('got', 'skip'); void card.offsetWidth; card.classList.add(ok ? 'got' : 'skip'); }
+    buzz(ok ? 60 : [30, 50, 30]);
+    var f = $('.hu-flash');
+    if (f){
+      f.className = 'hu-flash';
+      f.innerHTML = '<span>' + ico(ok ? 'check' : 'x') + (ok ? 'Got it!' : 'Skip') + '</span>';
+      void f.offsetWidth;
+      f.className = 'hu-flash ' + (ok ? 'got' : 'skip');
+    }
     H.cur = nextWord();
     var w = $('.hu-word'), l = $('.hu-lbl'), p = $('.hu-pts b');
     if (w) w.outerHTML = '<div class="hu-word">' + esc(H.cur.w) + '</div>';
@@ -360,7 +402,7 @@
     if (H.phase !== 'play') return;
     stopTimers();
     H.phase = 'done';
-    setLive(false); keepAwake(false);
+    setLive(false); keepAwake(false); tiltStop();
     buzz(H.early ? 40 : [90, 60, 200]);
     renderHeadsEnd();
   }
@@ -382,30 +424,32 @@
         '<button type="button" class="btn btn-map" data-g="hsetup">Change deck</button>' +
       '</div>');
   }
-  // Swipe the card: right = got it, left = skip
-  var drag = null;
+  // The whole screen is two tap zones: right half = got it, left half = skip
   view.addEventListener('pointerdown', function(e){
     if (H.phase !== 'play') return;
-    var c = e.target.closest('.hu-card');
-    if (!c) return;
-    drag = { x:e.clientX, y:e.clientY, id:e.pointerId, el:c };
-    try { c.setPointerCapture(e.pointerId); } catch(err){}
-    c.style.transition = 'none';
+    var play = e.target.closest('.hu-play');
+    if (!play || e.target.closest('.hu-end') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault();
+    if (performance.now() - shownAt < 300) return;
+    var r = play.getBoundingClientRect();
+    headsAct(e.clientX >= r.left + r.width / 2);
   });
-  view.addEventListener('pointermove', function(e){
-    if (!drag || e.pointerId !== drag.id) return;
-    var dx = e.clientX - drag.x;
-    drag.el.style.transform = 'translateX(' + (dx * .5).toFixed(1) + 'px) rotate(' + (dx * .04).toFixed(2) + 'deg)';
-  });
-  function endDrag(e, cancel){
-    if (!drag || e.pointerId !== drag.id) return;
-    var d = drag, dx = e.clientX - d.x, dy = e.clientY - d.y;
-    drag = null;
-    d.el.style.transition = ''; d.el.style.transform = '';
-    if (!cancel && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.2) headsAct(dx > 0);
+  // Every stray tap counts now, so End needs a second tap to confirm
+  function endTap(){
+    if (H.phase !== 'play') return;
+    var dt = performance.now() - H.endArm;
+    if (H.endArm && dt < 400) return;
+    if (H.endArm){ H.early = true; finishHeads(); return; }
+    H.endArm = performance.now();
+    endLabel(true);
+    H.endT = setTimeout(function(){ H.endArm = 0; H.endT = null; endLabel(false); }, 3000);
   }
-  view.addEventListener('pointerup', function(e){ endDrag(e, false); });
-  view.addEventListener('pointercancel', function(e){ endDrag(e, true); });
+  function endLabel(arm){
+    var b = $('.hu-end');
+    if (!b) return;
+    b.classList.toggle('arm', arm);
+    b.querySelector('span').textContent = arm ? 'Tap again to end' : 'End';
+  }
   document.addEventListener('keydown', function(e){
     if (H.phase !== 'play' || view.hidden) return;
     if (e.key === 'ArrowRight'){ e.preventDefault(); headsAct(true); }
@@ -470,18 +514,16 @@
     // A quick double tap shouldn't land on the next screen's buttons
     if (g !== 'home' && performance.now() - shownAt < 300) return;
     switch (g){
-      case 'home': stopTimers(); setLive(false); keepAwake(false); H.phase = 'setup'; renderHome(); break;
+      case 'home': stopTimers(); setLive(false); keepAwake(false); tiltStop(); H.phase = 'setup'; renderHome(); break;
       case 'open': open(b.dataset.k); break;
       case 'answer': answer(+b.dataset.i); break;
       case 'tnext': nextQuestion(); break;
       case 'tagain': startTrivia(); break;
       case 'hcat': pickCat(b.dataset.c); break;
-      case 'hstart': startHeads(); break;
+      case 'hstart': tiltStart(startHeads); break;
       case 'hsetup': renderHeadsSetup(); break;
       case 'hquit': quitCountdown(); break;
-      case 'hgot': headsAct(true); break;
-      case 'hskip': headsAct(false); break;
-      case 'hend': H.early = true; finishHeads(); break;
+      case 'hend': endTap(); break;
       case 'ereveal': if (!E.shown){ E.shown = true; emojiUpdate(); buzz(20); } break;
       case 'ehint': if (!E.hint){ E.hint = true; emojiUpdate(); } break;
       case 'enext': nextEmoji(); break;
