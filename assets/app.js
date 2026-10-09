@@ -304,7 +304,36 @@
   /* ---------- RIDES ---------- */
   var ridesPark = null, ridesPicked = false, popRide = null;
   var TAG_LABEL = { thrill:'Thrill', family:'Family', kids:'Kids', show:'Show', walk:'Walkthrough' };
+  var TYPE_GROUPS = [
+    { key:'thrill', name:'Thrill rides', icon:'🎢', tags:['thrill'] },
+    { key:'family', name:'Chill rides', icon:'🚂', tags:['family'] },
+    { key:'kids',   name:'Kid rides', icon:'🧸', tags:['kids'] },
+    { key:'show',   name:'Shows & walkthroughs', icon:'🎭', tags:['show','walk'] }
+  ];
+  var LAND_OF = {};
+  R.parks.forEach(function(p){ p.lands.forEach(function(l){ l.rides.forEach(function(r){ LAND_OF[r.id] = l; }); }); });
+  // View prefs (group mode + collapsed sections), kept apart from the ride checks
+  var RUI_KEY = 'dlr-rides-ui-v1';
+  var rui = (function(){
+    try {
+      var v = JSON.parse(localStorage.getItem(RUI_KEY));
+      if (v && typeof v === 'object') return { group: v.group === 'type' ? 'type' : 'land', closed: v.closed && typeof v.closed === 'object' ? v.closed : {} };
+    } catch(e){}
+    return { group:'land', closed:{} };
+  })();
+  function saveRui(){ try { localStorage.setItem(RUI_KEY, JSON.stringify(rui)); } catch(e){} }
   function ridesDefaultPark(){ var s = computeNext().stop; return s ? parkOf(s) : 'dl'; }
+  function ridesParkObj(){ return R.parks.filter(function(p){ return p.key === ridesPark; })[0] || R.parks[0]; }
+  function ridesSections(park){
+    if (rui.group === 'type'){
+      var all = park.lands.reduce(function(a, l){ return a.concat(l.rides); }, []);
+      return TYPE_GROUPS.map(function(g){
+        var list = all.filter(function(r){ return g.tags.indexOf(r.tag) >= 0; });
+        return { key: park.key + '|type|' + g.key, icon: g.icon, name: g.name, list: list.filter(function(r){ return !r.closed; }).concat(list.filter(function(r){ return r.closed; })) };
+      }).filter(function(s){ return s.list.length; });
+    }
+    return park.lands.map(function(l){ return { key: park.key + '|land|' + l.name, icon: l.icon, name: l.name, list: l.rides }; });
+  }
   function rideCount(list){
     var n = 0, t = 0;
     list.forEach(function(r){ if (r.closed) return; t++; if (rides[r.id]) n++; });
@@ -317,10 +346,10 @@
                '<span class="rx">' + ico('ban') + '</span>' +
              '</div></li>';
     }
-    var on = !!rides[r.id];
+    var on = !!rides[r.id], land = rui.group === 'type' && LAND_OF[r.id];
     return '<li><button type="button" class="rrow' + (on ? ' on' : '') + (popRide === r.id ? ' pop' : '') + '" data-act="ride" data-rid="' + esc(r.id) + '" aria-pressed="' + on + '">' +
              '<span class="rtxt"><span class="rn">' + esc(r.name) + '</span>' +
-               '<span class="rmeta"><span class="rtag t-' + esc(r.tag) + '">' + esc(TAG_LABEL[r.tag] || r.tag) + '</span>' +
+               '<span class="rmeta">' + (land ? '<span class="rland">' + esc(land.icon + ' ' + land.name) + '</span>' : '<span class="rtag t-' + esc(r.tag) + '">' + esc(TAG_LABEL[r.tag] || r.tag) + '</span>') +
                  (r.height ? '<span class="rh">' + ico('ruler') + esc(r.height) + '</span>' : '') + '</span>' +
                (r.note ? '<span class="rnote">' + esc(r.note) + '</span>' : '') +
              '</span>' +
@@ -335,7 +364,7 @@
       return;
     }
     if (!ridesPark) ridesPark = ridesDefaultPark();
-    var park = R.parks.filter(function(p){ return p.key === ridesPark; })[0] || R.parks[0];
+    var park = ridesParkObj();
     var c = rideCount(park.lands.reduce(function(a, l){ return a.concat(l.rides); }, []));
     head.innerHTML = '<div class="rcard starfield">' +
         '<div class="rseg" role="tablist" aria-label="Park">' + R.parks.map(function(p){
@@ -344,14 +373,36 @@
         }).join('') + '</div>' +
         '<div class="progress"><div class="bar"><i style="width:' + (c.t ? Math.round(c.n / c.t * 100) : 0) + '%"></i></div><div class="lbl">' + c.n + ' of ' + c.t + ' ridden</div></div>' +
       '</div>';
-    list.innerHTML = park.lands.map(function(l){
-      var lc = rideCount(l.rides);
-      return '<section class="land park-' + esc(park.key) + (lc.t && lc.n === lc.t ? ' all' : '') + '">' +
-               '<div class="land-head"><span class="land-ico" aria-hidden="true">' + esc(l.icon) + '</span><h3>' + esc(l.name) + '</h3><span class="land-count">' + lc.n + ' of ' + lc.t + '</span></div>' +
-               '<div class="land-perf" aria-hidden="true"></div>' +
-               '<ul class="rlist">' + l.rides.map(rideRow).join('') + '</ul>' +
-             '</section>';
-    }).join('');
+    var secs = ridesSections(park), anyOpen = secs.some(function(s){ return !rui.closed[s.key]; });
+    list.innerHTML = '<div class="rtools">' +
+        '<div class="rgroup" role="group" aria-label="Group by"><span class="rg-lbl">Group by</span><span class="rg-seg">' +
+          [['land','Land'],['type','Type']].map(function(g){
+            var on = rui.group === g[0];
+            return '<button type="button" data-act="rgroup" data-group="' + g[0] + '" aria-pressed="' + on + '"' + (on ? ' class="on"' : '') + '>' + g[1] + '</button>';
+          }).join('') + '</span></div>' +
+        '<button type="button" class="rall" data-act="rall">' + (anyOpen ? 'Collapse all' : 'Expand all') + ico('chev', anyOpen ? 'up' : 'down') + '</button>' +
+      '</div>' +
+      secs.map(function(s){
+        var sc = rideCount(s.list), open = !rui.closed[s.key];
+        return '<section class="land park-' + esc(park.key) + (sc.t && sc.n === sc.t ? ' all' : '') + (open ? '' : ' shut') + '">' +
+                 '<h3 class="land-h"><button type="button" class="land-head" data-act="rsec" data-sec="' + esc(s.key) + '" aria-expanded="' + open + '">' +
+                   '<span class="land-ico" aria-hidden="true">' + esc(s.icon) + '</span><span class="land-name">' + esc(s.name) + '</span>' +
+                   '<span class="land-count">' + sc.n + '/' + sc.t + '</span>' + ico('chev', 'lchev') +
+                 '</button></h3>' +
+                 (open ? '<div class="land-perf" aria-hidden="true"></div><ul class="rlist">' + s.list.map(rideRow).join('') + '</ul>' : '') +
+               '</section>';
+      }).join('');
+  }
+  function toggleSection(key){
+    var a = document.activeElement, refocus = !!(a && a.getAttribute && a.getAttribute('data-sec') === key);
+    if (rui.closed[key]) delete rui.closed[key]; else rui.closed[key] = 1;
+    saveRui(); renderRides();
+    if (refocus){ var b = $$('#ridesList [data-sec]').filter(function(x){ return x.dataset.sec === key; })[0]; if (b) b.focus({ preventScroll:true }); }
+  }
+  function toggleAllSections(){
+    var secs = ridesSections(ridesParkObj()), anyOpen = secs.some(function(s){ return !rui.closed[s.key]; });
+    secs.forEach(function(s){ if (anyOpen) rui.closed[s.key] = 1; else delete rui.closed[s.key]; });
+    saveRui(); renderRides();
   }
   function toggleRide(rid){
     var a = document.activeElement, refocus = !!(a && a.getAttribute && a.getAttribute('data-rid') === rid);
@@ -516,6 +567,11 @@
       case 'rpark':
         ridesPicked = true;
         if (b.dataset.park !== ridesPark){ ridesPark = b.dataset.park; renderRides(); $('#view-rides').scrollTop = 0; }
+        break;
+      case 'rsec': toggleSection(b.dataset.sec); break;
+      case 'rall': toggleAllSections(); break;
+      case 'rgroup':
+        if (b.dataset.group !== rui.group){ rui.group = b.dataset.group === 'type' ? 'type' : 'land'; saveRui(); renderRides(); $('#view-rides').scrollTop = 0; }
         break;
     }
   });
