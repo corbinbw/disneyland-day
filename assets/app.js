@@ -173,7 +173,7 @@
 
   /* ---------- PLAN ---------- */
   var openRowId = null;
-  // Timeline sections by time of day (presentation only; stop order is unchanged)
+  // Timeline sections by time of day
   var PARTS = [
     { key:'morning',   label:'Morning',   icon:'sun',    until:12*60 },
     { key:'afternoon', label:'Afternoon', icon:'sunset', until:18*60 },
