@@ -244,7 +244,7 @@
     { k:'rides', name:'In the parks', words: HW.rides }
   ];
   var ROUND_MS = 60000, LOCK_MS = 600;
-  var H = { cat:'mix', phase:'setup', score:0, list:[], cur:null, end:0, tick:null, cd:null, lastAct:0, early:false, decks:{}, endArm:0, endT:null };
+  var H = { cat:'mix', phase:'setup', score:0, list:[], cur:null, end:0, tick:null, cd:null, lastAct:0, early:false, decks:{}, endArm:0, endT:null, flashT:null };
   function cat(){ for (var i=0;i<CATS.length;i++) if (CATS[i].k === H.cat) return CATS[i]; return CATS[0]; }
   function nextWord(){ var c = cat(); return (H.decks[c.k] || (H.decks[c.k] = deck(c.words))).next(); }
   var lock = null;
@@ -259,6 +259,7 @@
     if (H.cd){ clearInterval(H.cd); H.cd = null; }
     if (H.tick){ clearInterval(H.tick); H.tick = null; }
     if (H.endT){ clearTimeout(H.endT); H.endT = null; }
+    if (H.flashT){ clearTimeout(H.flashT); H.flashT = null; }
   }
 
   /* Tilt: screen face down = got it, face up = skip, measured from where the phone sat when the round began */
@@ -384,12 +385,15 @@
     H.list.push({ w:H.cur.w, ok:ok });
     if (ok) H.score++;
     buzz(ok ? 60 : [30, 50, 30]);
+    // Shown with a class + timeout rather than a keyframe animation, so it still appears with Reduce Motion on
     var f = $('.hu-flash');
     if (f){
+      clearTimeout(H.flashT);
       f.className = 'hu-flash';
       f.innerHTML = '<span>' + ico(ok ? 'check' : 'x') + (ok ? 'Got it!' : 'Skip') + '</span>';
       void f.offsetWidth;
-      f.className = 'hu-flash ' + (ok ? 'got' : 'skip');
+      f.className = 'hu-flash on ' + (ok ? 'got' : 'skip');
+      H.flashT = setTimeout(function(){ f.classList.remove('on'); H.flashT = null; }, 350);
     }
     H.cur = nextWord();
     var w = $('.hu-word'), l = $('.hu-lbl'), p = $('.hu-pts b');
