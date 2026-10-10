@@ -92,12 +92,13 @@
         meta: store.triviaPlays ? ico('trophy') + 'Best ' + store.triviaBest + '/10' : D.trivia.length + ' questions' },
       { k:'heads', ico:'🤳', name:'Heads Up!', desc:'Phone on your forehead while everyone gives clues. 60 seconds.', meta: HEADS_TOTAL + ' words' },
       { k:'emoji', ico:'🍿', name:'Emoji Movie Guess', desc:'Name the movie or ride from the emoji. First to shout it wins.', meta: D.emoji.length + ' puzzles' },
-      { k:'wyr', ico:'🤔', name:'Would You Rather', desc:'Pick one, then defend your choice.', meta: D.wyr.length + ' questions' }
+      { k:'wyr', ico:'🤔', name:'Would You Rather', desc:'Pick one, then defend your choice.', meta: D.wyr.length + ' questions' },
+      { k:'tanks', ico:'💥', name:'Tank Battle (2 players)', desc:'Lay the phone flat between you. Drive, bounce shots off the walls, first to 5 wins.', meta:'2 players · one phone' }
     ];
     show('<section class="g-hero starfield">' + FIREWORKS +
            '<span class="g-kicker">Line games</span>' +
            '<h2>Pass the phone while you wait</h2>' +
-           '<p>4 games · works offline · no sign-up</p>' +
+           '<p>' + cards.length + ' games · works offline · no sign-up</p>' +
          '</section>' +
          '<div class="g-list">' + cards.map(function(c){
            return '<button type="button" class="g-card gk-' + c.k + '" data-g="open" data-k="' + c.k + '">' +
@@ -114,6 +115,7 @@
     else if (k === 'heads') renderHeadsSetup();
     else if (k === 'emoji') nextEmoji();
     else if (k === 'wyr') nextWyr();
+    else if (k === 'tanks') startTanks();
   }
 
   /* ---------- trivia ---------- */
@@ -510,6 +512,25 @@
     buzz(15);
   }
 
+  /* ---------- tank battle (the game itself lives in tanks.js) ---------- */
+  var tanksOn = false;
+  function startTanks(){
+    if (!window.DLTanks){
+      show(bar('Tank Battle', '') + '<div class="note"><span>Tank Battle didn\'t load. Reload the app once you have signal.</span></div>');
+      return;
+    }
+    tanksOn = true;
+    setLive(true);
+    show('<div class="tk"></div>', 'full edge');
+    window.DLTanks.mount($('.tk'), { onExit: function(){ stopTanks(); renderHome(); } });
+  }
+  function stopTanks(){
+    if (!tanksOn) return;
+    tanksOn = false;
+    window.DLTanks.unmount();
+    setLive(false);
+  }
+
   /* ---------- events ---------- */
   view.addEventListener('click', function(e){
     var b = e.target.closest('[data-g]');
@@ -545,6 +566,7 @@
   function leave(){
     if (H.phase === 'count') quitCountdown();
     else if (H.phase === 'play'){ H.early = true; finishHeads(); }
+    if (tanksOn){ stopTanks(); renderHome(); }
   }
 
   renderHome();
