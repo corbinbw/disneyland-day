@@ -1015,7 +1015,7 @@ button.rrow:active{background:#f4f2fa}
 }
 .tk-pause.arm{background:#fff;color:#c2183f}
 .tk-ctrl{flex:1 1 auto;min-height:0;display:flex;align-items:center;gap:16px;padding:2px 0 12px}
-.tk-stick{position:relative;flex:1 1 auto;align-self:stretch}
+.tk-stick{position:relative;flex:1 1 auto;align-self:stretch;touch-action:none}
 .tk-base{
   --bs:clamp(84px,calc(var(--padh) - 60px),120px);
   position:absolute;left:50%;top:50%;width:var(--bs);height:var(--bs);margin:calc(var(--bs) / -2) 0 0 calc(var(--bs) / -2);border-radius:50%;pointer-events:none;

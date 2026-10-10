@@ -87,7 +87,7 @@
     cancelAnimationFrame(raf); raf = 0;
     window.removeEventListener('resize', fit);
     document.removeEventListener('visibilitychange', onVis);
-    if (G && G.arm) clearTimeout(G.arm.timer);
+    disarm();
     awake(false);
     root = null; G = null; cv = ctx = floor = null; ui = null;
   }
@@ -206,7 +206,7 @@
   /* ---------- match flow ---------- */
   function tank(p){ var s = SPAWN[p]; return { p:p, x:s.x, y:s.y, h:s.h, alive:true, cd:0, want:0, kick:0, tread:0 }; }
   function newMatch(){
-    if (G && G.arm) clearTimeout(G.arm.timer);
+    disarm();
     G = { phase:'count', t:0, round:0, score:{ 1:0, 2:0 }, tanks:null, bullets:[], parts:[], rings:[], paused:false, winner:0, arm:null, say:null, msgKey:'' };
     acc = 0;
     if (root){ $('.tk-over').hidden = true; letGo(); }
@@ -251,6 +251,7 @@
   }
   function over(k){
     G.phase = 'over'; G.winner = k;
+    disarm();
     letGo();
     overlay('over');
     buzz([90, 60, 90, 60, 220]);
@@ -274,8 +275,12 @@
     b.classList.toggle('arm', on);
     b.querySelector('span').textContent = on ? 'Tap again to pause' : 'Pause';
   }
+  function disarm(){
+    if (!G || !G.arm) return;
+    clearTimeout(G.arm.timer); armLabel(G.arm.p, false); G.arm = null;
+  }
   function pause(){
-    if (G.arm){ clearTimeout(G.arm.timer); armLabel(G.arm.p, false); G.arm = null; }
+    disarm();
     G.paused = true;
     letGo();
     overlay('pause');
@@ -363,9 +368,9 @@
     for (i = G.bullets.length - 1; i >= 0; i--){
       b = G.bullets[i];
       for (var p = 1; p <= 2; p++){
-        var t = G.tanks[p], dx = b.x - t.x, dy = b.y - t.y, rr = TANK_R + BULLET_R;
+        var t = G.tanks[p], dx = b.x - t.x, dy = b.y - t.y, reach = TANK_R + BULLET_R;
         if (!t.alive || (b.p === p && b.b === 0)) continue;   // your own shot can't hit you until it has bounced
-        if (dx * dx + dy * dy < rr * rr){ dead.push({ t:t, by:b.p }); G.bullets.splice(i, 1); break; }
+        if (dx * dx + dy * dy < reach * reach){ dead.push({ t:t, by:b.p }); G.bullets.splice(i, 1); break; }
       }
     }
     // Shots that meet cancel each other out
